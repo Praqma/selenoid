@@ -1,0 +1,37 @@
+version: '3'
+services:
+  selenoid-image-fetcher:
+    build: selenoid-image-fetcher/
+    image: "praqma/selenoid-image-fetcher:1.0.0"
+    restart: unless-stopped
+    environment:
+      - PULL_WAIT_PERIOD=$PULL_WAIT_PERIOD
+    networks:
+      - default
+    volumes:
+      - "$PWD:/config" # assumed current dir contains browsers.json
+      - /var/run/docker.sock:/var/run/docker.sock
+  selenoid:
+    image: "aerokube/selenoid:1.10.0"
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "4444:4444"
+    volumes:
+      - "$PWD:/etc/selenoid/" # assumed current dir contains browsers.json
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    depends_on:
+      - selenoid-image-fetcher
+  selenoid-ui:
+    image: "aerokube/selenoid-ui:1.8.1"
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "9000:8080"
+    links:
+      - selenoid
+    depends_on:
+      - selenoid
+    command: ["--selenoid-uri", "http://selenoid:4444"]
